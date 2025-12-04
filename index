@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Україна</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="score">0</div>
+        <div id="startScreen">
+            <h1>Flappy Bird</h1>
+            <p>Натисни пробіл або торкнись екрану, щоб почати</p>
+        </div>
+        <div id="gameOver" class="hidden">
+            <h2>Гра завершена!</h2>
+            <p>Рахунок: <span id="finalScore">0</span></p>
+            <button onclick="restartGame()">Грати знову</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
