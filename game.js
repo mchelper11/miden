@@ -4,11 +4,11 @@ const ctx = canvas.getContext('2d');
 // Змінні гри
 let frames = 0;
 let score = 0;
-let highScore = localStorage.getItem('flappyBest') || 0;
+let highScore = localStorage.getItem('spaceFlappyBest') || 0;
 let gamePlaying = false;
-let speed = 2.5; // Швидкість гри
+let gameSpeed = 3;
 
-// Елементи UI
+// UI елементи
 const scoreEl = document.getElementById('score');
 const finalScoreEl = document.getElementById('finalScore');
 const bestScoreEl = document.getElementById('bestScore');
@@ -16,286 +16,348 @@ const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOver');
 const restartBtn = document.getElementById('restartBtn');
 
-// --- ФОН (ЗІРКИ) ---
+// Завантажуємо картинку космонавта
+const astronautImg = new Image();
+astronautImg.src = 'astronaut.png';
+
+// Чекаємо завантаження картинки
+astronautImg.onload = () => {
+    console.log('✅ Astronaut image loaded');
+    initGame();
+};
+astronautImg.onerror = () => {
+    console.error('❌ Cannot load astronaut.png');
+    // Малюємо заглушку якщо картинка не завантажилась
+    initGame();
+};
+
+function initGame() {
+    updateUI();
+    drawStaticFrame();
+    
+    // Події
+    setupEventListeners();
+}
+
+// --- ЗІРКИ ---
 const stars = [];
-for (let i = 0; i < 100; i++) {
+for(let i = 0; i < 120; i++) {
     stars.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * 2,
-        opacity: Math.random()
+        size: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.8 + 0.2,
+        twinkle: Math.random() * Math.PI * 2
     });
 }
 
 function drawBackground() {
-    ctx.fillStyle = "#000"; // Чорний фон
+    // Чорний фон
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "white";
+    
+    // Зірки з мерехтінням
     stars.forEach(star => {
-        ctx.globalAlpha = star.opacity;
+        star.twinkle += 0.05;
+        const twinkleAlpha = star.alpha * (0.7 + 0.3 * Math.sin(star.twinkle));
+        
+        ctx.save();
+        ctx.globalAlpha = twinkleAlpha;
+        ctx.fillStyle = "#FFF";
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
     });
-    ctx.globalAlpha = 1.0; // Скидаємо прозорість
 }
 
-// --- ГРАВЕЦЬ (ПТАШКА) ---
-const bird = {
-    x: 50,
-    y: 150,
-    w: 30,
-    h: 30,
-    radius: 12,
-    velocity: 0,
-    gravity: 0.25,
-    jump: 5.5, // Трохи сильніший стрибок
+// --- АСТРОНАВТ ---
+const astronaut = {
+    x: 80,
+    y: 200,
+    width: 40,
+    height: 40,
+    vx: 0,  // Обертання
+    vy: 0,
+    gravity: 0.3,
+    jumpPower: 6.2,
     
-    draw: function() {
-        // Можна замінити на картинку
-        ctx.fillStyle = "#FFD700"; // Золотий колір пташки
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
-        // Око
-        ctx.fillStyle = "#000";
-        ctx.beginPath();
-        ctx.arc(this.x + 5, this.y - 5, 2, 0, Math.PI * 2);
-        ctx.fill();
+    draw() {
+        ctx.save();
+        ctx.translate(this.x + this.width/2, this.y + this.height/2);
+        ctx.rotate(this.vx * 0.1);
+        
+        if (astronautImg.complete && astronautImg.naturalHeight !== 0) {
+            // Малюємо картинку
+            ctx.drawImage(
+                astronautImg,
+                -this.width/2, -this.height/2,
+                this.width, this.height
+            );
+        } else {
+            // Заглушка - білий круг з шоломом
+            ctx.fillStyle = "#FFF";
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.fillStyle = "#88CCFF";
+            ctx.fillRect(-5, -12, 10, 8);
+        }
+        
+        ctx.restore();
     },
     
-    update: function() {
-        this.velocity += this.gravity;
-        this.y += this.velocity;
+    update() {
+        this.vy += this.gravity;
+        this.y += this.vy;
+        this.vx *= 0.95; // Згасання обертання
         
-        // Межі підлоги та стелі
-        if (this.y + this.radius >= canvas.height) {
+        // Границі
+        if (this.y + this.height > canvas.height - 20) {
             gameOver();
         }
-        if (this.y - this.radius <= 0) {
-            this.y = this.radius;
-            this.velocity = 0;
+        if (this.y < 0) {
+            this.y = 0;
+            this.vy = 0;
         }
     },
     
-    flap: function() {
-        this.velocity = -this.jump;
+    jump() {
+        this.vy = -this.jumpPower;
+        this.vx += 0.3; // Легке обертання при стрибку
     },
     
-    reset: function() {
-        this.y = 150;
-        this.velocity = 0;
+    reset() {
+        this.y = 200;
+        this.vy = 0;
+        this.vx = 0;
     }
-}
+};
 
 // --- ТРУБИ ---
 const pipes = {
     items: [],
-    w: 70, // Ширші труби (було 50)
-    gap: 170, // Простір між трубами
-    dx: speed,
+    width: 75,
+    gap: 165,
+    speed: gameSpeed,
     
-    draw: function() {
-        ctx.fillStyle = "#2ecc71"; // Яскраво-зелений колір
-        ctx.strokeStyle = "#27ae60"; // Темніший контур
-        ctx.lineWidth = 2;
-
-        for (let i = 0; i < this.items.length; i++) {
-            let p = this.items[i];
-            let topY = p.y;
-            let bottomY = p.y + this.gap;
-            
+    draw() {
+        ctx.fillStyle = "#2ecc71";
+        ctx.strokeStyle = "#27ae60";
+        ctx.lineWidth = 4;
+        ctx.shadowColor = "#00ff00";
+        ctx.shadowBlur = 10;
+        
+        this.items.forEach(pipe => {
             // Верхня труба
-            ctx.fillRect(p.x, 0, this.w, topY);
-            ctx.strokeRect(p.x, 0, this.w, topY);
+            ctx.fillRect(pipe.x, 0, this.width, pipe.topHeight);
+            ctx.strokeRect(pipe.x, 0, this.width, pipe.topHeight);
             
             // Нижня труба
-            ctx.fillRect(p.x, bottomY, this.w, canvas.height - bottomY);
-            ctx.strokeRect(p.x, bottomY, this.w, canvas.height - bottomY);
-        }
+            const bottomY = pipe.topHeight + this.gap;
+            ctx.fillRect(pipe.x, bottomY, this.width, canvas.height - bottomY);
+            ctx.strokeRect(pipe.x, bottomY, this.width, canvas.height - bottomY);
+        });
+        
+        ctx.shadowBlur = 0;
     },
     
-    update: function() {
-        // Додаємо нову трубу кожні 100 кадрів (залежить від швидкості)
-        if (frames % 110 === 0) {
-            let positionY = Math.random() * (canvas.height - this.gap - 100) + 50;
+    update() {
+        if (frames % 95 === 0) {
+            const topHeight = 50 + Math.random() * (canvas.height - this.gap - 120);
             this.items.push({
                 x: canvas.width,
-                y: positionY,
+                topHeight,
                 passed: false
             });
-
-            // --- ШАНС НА БОНУС (50%) ---
-            if (Math.random() > 0.5) {
+            
+            // Бонус з шансом 60%
+            if (Math.random() > 0.4) {
                 bonuses.items.push({
-                    x: canvas.width + this.w / 2 - 10, // По центру труби
-                    y: positionY + this.gap / 2, // По центру проміжку
-                    taken: false
+                    x: canvas.width + this.width/2,
+                    y: topHeight + this.gap/2,
+                    collected: false
                 });
             }
         }
         
-        for (let i = 0; i < this.items.length; i++) {
-            let p = this.items[i];
-            p.x -= this.dx;
+        for (let i = this.items.length - 1; i >= 0; i--) {
+            const pipe = this.items[i];
+            pipe.x -= this.speed;
             
-            // Видалення старих труб
-            if (p.x + this.w <= 0) {
-                this.items.shift();
-                i--; // Коригуємо індекс після видалення
+            if (pipe.x + this.width < 0) {
+                this.items.splice(i, 1);
                 continue;
             }
             
-            // Колізія з трубами
-            if (
-                bird.x + bird.radius > p.x && 
-                bird.x - bird.radius < p.x + this.w && 
-                (bird.y - bird.radius < p.y || bird.y + bird.radius > p.y + this.gap)
-            ) {
+            // Колізія
+            const hit = astronaut.x + astronaut.width/2 > pipe.x &&
+                       astronaut.x - astronaut.width/2 < pipe.x + this.width &&
+                       (astronaut.y < pipe.topHeight || astronaut.y + astronaut.height > pipe.topHeight + this.gap);
+            
+            if (hit) {
                 gameOver();
+                return;
             }
-
-            // Рахунок за проходження
-            if (p.x + this.w < bird.x && !p.passed) {
+            
+            // Очки
+            if (pipe.x + this.width < astronaut.x && !pipe.passed) {
                 score++;
-                scoreEl.innerText = score;
-                p.passed = true;
+                scoreEl.textContent = score;
+                pipe.passed = true;
             }
         }
     },
-
-    reset: function() {
+    
+    reset() {
         this.items = [];
     }
-}
+};
 
 // --- БОНУСИ ---
 const bonuses = {
     items: [],
-    radius: 10,
-
-    draw: function() {
-        ctx.fillStyle = "#FF4500"; // Червоно-помаранчевий (як пачка Marlboro або просто яскравий бонус)
-        ctx.strokeStyle = "#FFF";
-        
-        for (let i = 0; i < this.items.length; i++) {
-            let b = this.items[i];
-            if (b.taken) continue;
-
-            // Малюємо бонус (кружечок)
+    radius: 14,
+    
+    draw() {
+        this.items.forEach(bonus => {
+            if (bonus.collected) return;
+            
+            ctx.save();
+            ctx.shadowColor = "#FF4500";
+            ctx.shadowBlur = 15;
+            
+            // Червоний круг
+            ctx.fillStyle = "#FF4500";
             ctx.beginPath();
-            ctx.arc(b.x, b.y, this.radius, 0, Math.PI * 2);
+            ctx.arc(bonus.x, bonus.y, this.radius, 0, Math.PI*2);
             ctx.fill();
+            
+            // Білий контур
+            ctx.strokeStyle = "#FFF";
+            ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Літера "B" або "$" всередині
-            ctx.fillStyle = "white";
-            ctx.font = "12px Arial";
-            ctx.fillText("$", b.x - 3, b.y + 4);
-            ctx.fillStyle = "#FF4500"; // Повертаємо колір
+            // Знак "+"
+            ctx.fillStyle = "#FFF";
+            ctx.font = "bold 18px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("+5", bonus.x, bonus.y + 2);
+            
+            ctx.restore();
+        });
+    },
+    
+    update() {
+        for (let i = bonuses.items.length - 1; i >= 0; i--) {
+            const bonus = bonuses.items[i];
+            bonus.x -= gameSpeed;
+            
+            // Колізія з астронавтом
+            const dx = astronaut.x + astronaut.width/2 - bonus.x;
+            const dy = astronaut.y + astronaut.height/2 - bonus.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            if (distance < astronaut.width/2 + this.radius && !bonus.collected) {
+                bonus.collected = true;
+                score += 5;
+                scoreEl.textContent = score;
+            }
+            
+            if (bonus.x + this.radius < 0) {
+                bonuses.items.splice(i, 1);
+            }
         }
     },
-
-    update: function() {
-        for (let i = 0; i < this.items.length; i++) {
-            let b = this.items[i];
-            b.x -= speed;
-
-            // Перевірка взяття бонусу
-            let dx = bird.x - b.x;
-            let dy = bird.y - b.y;
-            let distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < bird.radius + this.radius && !b.taken) {
-                b.taken = true;
-                score += 5; // +5 балів за бонус
-                scoreEl.innerText = score;
-                // Можна додати звук монетки тут
-            }
-
-            // Видалення
-            if (b.x + this.radius < 0) {
-                this.items.shift();
-                i--;
-            }
-        }
-    },
-
-    reset: function() {
+    
+    reset() {
         this.items = [];
     }
+};
+
+// --- ОСНОВНА ЛОГІКА ---
+function updateUI() {
+    bestScoreEl.textContent = highScore;
+    scoreEl.textContent = score;
 }
 
-// --- УПРАВЛІННЯ ГРОЮ ---
+function drawStaticFrame() {
+    drawBackground();
+}
+
+function gameLoop() {
+    if (!gamePlaying) return;
+    
+    drawBackground();
+    
+    pipes.update();
+    pipes.draw();
+    
+    bonuses.update();
+    bonuses.draw();
+    
+    astronaut.update();
+    astronaut.draw();
+    
+    frames++;
+    requestAnimationFrame(gameLoop);
+}
+
 function gameOver() {
     gamePlaying = false;
     
-    // Оновлення рекорду
     if (score > highScore) {
         highScore = score;
-        localStorage.setItem('flappyBest', highScore);
+        localStorage.setItem('spaceFlappyBest', highScore);
     }
     
-    finalScoreEl.innerText = score;
-    bestScoreEl.innerText = highScore;
-    
+    finalScoreEl.textContent = score;
+    bestScoreEl.textContent = highScore;
     gameOverScreen.classList.remove('hidden');
 }
 
 function resetGame() {
-    bird.reset();
+    astronaut.reset();
     pipes.reset();
     bonuses.reset();
     score = 0;
     frames = 0;
-    scoreEl.innerText = score;
+    
+    updateUI();
+    startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     gamePlaying = true;
-    loop();
+    
+    gameLoop();
 }
 
-function loop() {
-    if (!gamePlaying) return;
+function setupEventListeners() {
+    // Клавіатура
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            if (gamePlaying) {
+                astronaut.jump();
+            } else {
+                resetGame();
+            }
+        }
+    });
     
-    drawBackground(); // Малюємо зірки
-    
-    pipes.update();
-    pipes.draw();
-
-    bonuses.update();
-    bonuses.draw();
-    
-    bird.update();
-    bird.draw();
-    
-    frames++;
-    requestAnimationFrame(loop);
-}
-
-// --- ПОДІЇ ---
-window.addEventListener("keydown", (e) => {
-    if (e.code === "Space") {
+    // Мишка/тач
+    canvas.addEventListener('click', () => {
         if (gamePlaying) {
-            bird.flap();
-        } else if (startScreen.classList.contains('hidden') === false) {
-            startScreen.classList.add('hidden');
-            gamePlaying = true;
-            loop();
-        } else if (!gameOverScreen.classList.contains('hidden')) {
+            astronaut.jump();
+        } else {
             resetGame();
         }
-    }
-});
-
-window.addEventListener("click", () => {
-    if (gamePlaying) {
-        bird.flap();
-    } else if (startScreen.classList.contains('hidden') === false) {
-        startScreen.classList.add('hidden');
-        gamePlaying = true;
-        loop();
-    }
-});
-
-restartBtn.addEventListener("click", resetGame);
+    });
+    
+    // Рестарт кнопка
+    restartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetGame();
+    });
+}
