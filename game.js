@@ -77,22 +77,26 @@ function drawBackground() {
 }
 
 // -----------------------
-// АСТРОНАВТ
+// АСТРОНАВТ (нахил на ~30° при стрибку)
 // -----------------------
 const astronaut = {
     x: 80,
     y: 250,
     width: 45,
     height: 62,
-    vx: 0,
+
     vy: 0,
     gravity: 0.32,
     jumpPower: 6.4,
 
+    angle: 0, // кут повороту в радіанах (0 = прямо)
+
     draw() {
         ctx.save();
+
+        // Малюємо відносно центру спрайта
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-        ctx.rotate(this.vx * 0.08);
+        ctx.rotate(this.angle);
 
         if (astronautImg.complete && astronautImg.naturalWidth > 0) {
             ctx.drawImage(
@@ -108,14 +112,19 @@ const astronaut = {
             ctx.arc(0, 0, this.width / 2, 0, Math.PI * 2);
             ctx.fill();
         }
+
         ctx.restore();
     },
 
     update() {
+        // Політ
         this.vy += this.gravity;
         this.y += this.vy;
-        this.vx *= 0.96;
 
+        // Плавне повернення кута до 0 (вирівнювання)
+        this.angle *= 0.9; // можна змінити на 0.85 / 0.95 для швидше/повільніше
+
+        // Межі екрану
         if (this.y + this.height > canvas.height - 20) {
             gameOver();
         }
@@ -127,13 +136,16 @@ const astronaut = {
 
     jump() {
         this.vy = -this.jumpPower;
-        this.vx += 0.35;
+
+        // Нахил вправо приблизно на 30° (π / 6 радіан)
+        const tilt30deg = Math.PI / 6;
+        this.angle = tilt30deg;
     },
 
     reset() {
         this.y = 250;
         this.vy = 0;
-        this.vx = 0;
+        this.angle = 0;
     }
 };
 
@@ -217,7 +229,7 @@ const pipes = {
 };
 
 // -----------------------
-// БОНУСИ (МОНЕТКИ) - ✅ ОНОВЛЕНО!
+// БОНУСИ (МОНЕТКИ)
 // -----------------------
 const bonuses = {
     items: [],
@@ -231,7 +243,6 @@ const bonuses = {
             ctx.shadowColor = "#FFD700";
             ctx.shadowBlur = 20;
 
-            // ✅ ТВОЯ КАРТИНКА MONETKI
             if (coinImg.complete && coinImg.naturalWidth > 0) {
                 ctx.drawImage(
                     coinImg,
@@ -241,7 +252,6 @@ const bonuses = {
                     this.coinSize
                 );
             } else {
-                // fallback - золота монетка
                 const gradient = ctx.createRadialGradient(
                     bonus.x - 8, bonus.y - 8, 2,
                     bonus.x, bonus.y, this.coinSize / 2
