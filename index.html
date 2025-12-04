@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Flappy</title>
+    <title>Space Miden 🚀</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div id="game-container">
         <canvas id="gameCanvas" width="480" height="640"></canvas>
         
-        <div id="score-container">
-            Score: <span id="score">0</span>
-        </div>
+        <div id="ui-layer">
+            <div id="score">0</div>
 
-        <div id="startScreen">
-            <h1>SPACE FLAPPY</h1>
-            <p>Натисни пробіл або клікни, щоб почати</p>
-        </div>
+            <div id="startScreen">
+                <h1>MIDEN</h1>
+                <p>press Space</p>
+                <p style="font-size: 14px; color: yellow;">Збирай червоні бонуси (+5 очок)!</p>
+            </div>
 
-        <div id="gameOver" class="hidden">
-            <h2>GAME OVER</h2>
-            <p>Score: <span id="finalScore">0</span></p>
-            <p>Best: <span id="bestScore">0</span></p>
-            <button id="restartBtn">Restart</button>
+            <div id="gameOver" class="hidden">
+                <h1>GAME OVER</h1>
+                <p>Score: <span id="finalScore">0</span></p>
+                <p>Best: <span id="bestScore">0</span></p>
+                <button id="restartBtn">🔄 play again</button>
+            </div>
         </div>
     </div>
 
