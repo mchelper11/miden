@@ -19,21 +19,24 @@ const gameOverScreen = document.getElementById('gameOver');
 const restartBtn = document.getElementById('restartBtn');
 
 // -----------------------
-// Завантажуємо astronaut.png
+// Завантажуємо картинки
 // -----------------------
 const astronautImg = new Image();
 astronautImg.src = 'astronaut.png';
 
-// після завантаження → запуск гри
-astronautImg.onload = () => {
-    console.log("Astronaut loaded");
-    initGame();
-};
+const coinImg = new Image();
+coinImg.src = 'coin.png';
 
-astronautImg.onerror = () => {
-    console.warn("Cannot load astronaut.png");
-    initGame();
-};
+// після завантаження → запуск гри
+Promise.all([new Promise(r => astronautImg.onload = r), new Promise(r => coinImg.onload = r)])
+    .then(() => {
+        console.log("✅ All images loaded");
+        initGame();
+    })
+    .catch(() => {
+        console.warn("⚠️ Some images failed to load");
+        initGame();
+    });
 
 // -----------------------
 // Ініціалізація
@@ -74,15 +77,13 @@ function drawBackground() {
 }
 
 // -----------------------
-// АСТРОНАВТ (оновлено повністю)
+// АСТРОНАВТ
 // -----------------------
 const astronaut = {
     x: 80,
     y: 250,
-
-    width: 45,    // твій реальний розмір PNG
-    height: 62,  // твій реальний розмір PNG
-
+    width: 45,
+    height: 62,
     vx: 0,
     vy: 0,
     gravity: 0.32,
@@ -91,8 +92,7 @@ const astronaut = {
     draw() {
         ctx.save();
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-
-        ctx.rotate(this.vx * 0.08); // приємне легке обертання
+        ctx.rotate(this.vx * 0.08);
 
         if (astronautImg.complete && astronautImg.naturalWidth > 0) {
             ctx.drawImage(
@@ -103,13 +103,11 @@ const astronaut = {
                 this.height
             );
         } else {
-            // fallback — рідко використається, тільки якщо PNG не знайдено
             ctx.fillStyle = "yellow";
             ctx.beginPath();
             ctx.arc(0, 0, this.width / 2, 0, Math.PI * 2);
             ctx.fill();
         }
-
         ctx.restore();
     },
 
@@ -219,34 +217,47 @@ const pipes = {
 };
 
 // -----------------------
-// Бонуси
+// БОНУСИ (МОНЕТКИ) - ✅ ОНОВЛЕНО!
 // -----------------------
 const bonuses = {
     items: [],
-    radius: 14,
+    coinSize: 32, // розмір монетки
 
     draw() {
         this.items.forEach(bonus => {
             if (bonus.collected) return;
 
             ctx.save();
-            ctx.shadowColor = "#FF4500";
-            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#FFD700";
+            ctx.shadowBlur = 20;
 
-            ctx.fillStyle = "#FF4500";
-            ctx.beginPath();
-            ctx.arc(bonus.x, bonus.y, this.radius, 0, Math.PI * 2);
-            ctx.fill();
+            // ✅ ТВОЯ КАРТИНКА MONETKI
+            if (coinImg.complete && coinImg.naturalWidth > 0) {
+                ctx.drawImage(
+                    coinImg,
+                    bonus.x - this.coinSize / 2,
+                    bonus.y - this.coinSize / 2,
+                    this.coinSize,
+                    this.coinSize
+                );
+            } else {
+                // fallback - золота монетка
+                const gradient = ctx.createRadialGradient(
+                    bonus.x - 8, bonus.y - 8, 2,
+                    bonus.x, bonus.y, this.coinSize / 2
+                );
+                gradient.addColorStop(0, "#FFD700");
+                gradient.addColorStop(1, "#DAA520");
 
-            ctx.strokeStyle = "#FFF";
-            ctx.lineWidth = 2;
-            ctx.stroke();
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(bonus.x, bonus.y, this.coinSize / 2, 0, Math.PI * 2);
+                ctx.fill();
 
-            ctx.fillStyle = "#FFF";
-            ctx.font = "bold 18px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("+5", bonus.x, bonus.y + 1);
+                ctx.strokeStyle = "#FFF";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
 
             ctx.restore();
         });
@@ -261,13 +272,13 @@ const bonuses = {
             const dy = astronaut.y + astronaut.height / 2 - bonus.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist < astronaut.width / 2 + this.radius && !bonus.collected) {
+            if (dist < astronaut.width / 2 + this.coinSize / 2 && !bonus.collected) {
                 bonus.collected = true;
                 score += 5;
                 scoreEl.textContent = score;
             }
 
-            if (bonus.x + this.radius < 0) {
+            if (bonus.x + this.coinSize / 2 < 0) {
                 bonuses.items.splice(i, 1);
             }
         }
