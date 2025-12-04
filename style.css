@@ -6,101 +6,71 @@
 
 body {
     min-height: 100vh;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #FF6600; /* Основний фон */
+    background: #000; /* Чорний космос */
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* Убираем прокрутку, чтобы анимация фону была видна */
-}
-
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png') repeat; /* Легкий шум або хмарки */
-    opacity: 0.15; /* Прозорість для ефекту */
-    animation: moveBackground 10s infinite linear;
-}
-
-@keyframes moveBackground {
-    0% {
-        transform: translate(0, 0);
-    }
-    100% {
-        transform: translate(100px, -100px);
-    }
+    font-family: 'Verdana', sans-serif;
+    overflow: hidden;
 }
 
 #game-container {
     position: relative;
+    box-shadow: 0 0 50px rgba(0, 255, 0, 0.2); /* Зеленувате світіння */
 }
 
-#gameCanvas {
-    border-radius: 20px;
-    border: 4px solid #FFD700;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-    background: rgba(255, 102, 0, 0.8); /* Півпрозорий фон для ігрового поля */
-    transform: scale(1.5); /* Розширюємо в 1.5 рази */
+canvas {
+    background-color: #000;
+    border: 2px solid #333;
+    border-radius: 8px;
+    display: block;
 }
 
-#score {
+#score-container {
     position: absolute;
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 48px;
-    color: #FFFFFF;
-    text-shadow: 2px 2px 0 #FF3300;
-    font-weight: 700;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 10;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
-#startScreen,
-#gameOver {
+#startScreen, #gameOver {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 85%;
-    max-width: 360px;
-    padding: 30px;
-    background: rgba(255,255,255,0.95);
-    border-radius: 24px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.35);
     text-align: center;
-    border: 3px solid #FFD700; /* Золота рамка для меню */
-}
-
-#startScreen h1 {
-    font-size: 46px;
-    color: #FF6600;
-    margin-bottom: 14px;
-}
-
-#startScreen p,
-#gameOver h2,
-#gameOver p {
-    font-size: 20px;
-    color: #2c3e50;
-}
-
-#gameOver button {
-    margin-top: 18px;
-    padding: 12px 28px;
-    font-size: 18px;
-    border: none;
-    border-radius: 12px;
-    background: #FF6600;
     color: white;
-    cursor: pointer;
-    transition: background 0.2s ease;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 30px;
+    border: 2px solid #fff;
+    border-radius: 15px;
+    width: 80%;
 }
 
-#gameOver button:hover {
-    background: #E55A00;
+h1, h2 {
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px 25px;
+    font-size: 18px;
+    background: #2ecc71; /* Яскраво-зелений */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #27ae60;
 }
 
 .hidden {
