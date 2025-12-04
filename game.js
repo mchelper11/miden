@@ -11,8 +11,8 @@ canvas.height = 600;
 let bird = {
     x: 80,
     y: 260,
-    width: 34,
-    height: 24,
+    width: 51,
+    height: 36,
     velocity: 0,
     gravity: 0.5,
     lift: -8.5
@@ -60,28 +60,11 @@ function createPipe() {
     });
 }
 
+let astronautImg = new Image();
+astronautImg.src = 'astronaut.png'; // Твоя картинка
+
 function drawBird() {
-    ctx.fillStyle = '#ffd700';
-    ctx.beginPath();
-    ctx.arc(bird.x + bird.width / 2, bird.y + bird.height / 2, bird.width / 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(bird.x + bird.width - 8, bird.y + 12, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(bird.x + bird.width - 6, bird.y + 12, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ff6347';
-    ctx.beginPath();
-    ctx.moveTo(bird.x + bird.width, bird.y + bird.height / 2);
-    ctx.lineTo(bird.x + bird.width + 15, bird.y + bird.height / 2 - 5);
-    ctx.lineTo(bird.x + bird.width + 15, bird.y + bird.height / 2 + 5);
-    ctx.fill();
+    ctx.drawImage(astronautImg, bird.x, bird.y, bird.width, bird.height);
 }
 
 function drawPipes() {
