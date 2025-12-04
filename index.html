@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Miden game</title>
+    <title>Space Flappy</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <div id="game-container">
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
-        <div id="score">0</div>
-        <div id="startScreen">
-            <h1>Astronaut</h1>
-            <p>Press spacebar or tap the screen to start</p>
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+        
+        <div id="score-container">
+            Score: <span id="score">0</span>
         </div>
+
+        <div id="startScreen">
+            <h1>SPACE FLAPPY</h1>
+            <p>Натисни пробіл або клікни, щоб почати</p>
+        </div>
+
         <div id="gameOver" class="hidden">
-            <h2>Game over!</h2>
+            <h2>GAME OVER</h2>
             <p>Score: <span id="finalScore">0</span></p>
-            <button onclick="restartGame()">Play again</button>
+            <p>Best: <span id="bestScore">0</span></p>
+            <button id="restartBtn">Restart</button>
         </div>
     </div>
+
     <script src="game.js"></script>
 </body>
 </html>
