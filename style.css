@@ -7,10 +7,32 @@
 body {
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #FF6600; /* Змінено на суцільний помаранчевий */
+    background: #FF6600; /* Основний фон */
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden; /* Убираем прокрутку, чтобы анимация фону была видна */
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png') repeat; /* Легкий шум або хмарки */
+    opacity: 0.15; /* Прозорість для ефекту */
+    animation: moveBackground 10s infinite linear;
+}
+
+@keyframes moveBackground {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(100px, -100px);
+    }
 }
 
 #game-container {
@@ -21,7 +43,8 @@ body {
     border-radius: 20px;
     border: 4px solid #FFD700;
     box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-    background: #FF6600; /* Змінено на суцільний помаранчевий */
+    background: rgba(255, 102, 0, 0.8); /* Півпрозорий фон для ігрового поля */
+    transform: scale(1.5); /* Розширюємо в 1.5 рази */
 }
 
 #score {
